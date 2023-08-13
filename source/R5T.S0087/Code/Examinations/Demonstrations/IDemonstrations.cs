@@ -14,6 +14,49 @@ namespace R5T.S0087
     [DemonstrationsMarker]
     public partial interface IDemonstrations : IDemonstrationsMarker
     {
+        public void Get_DocumentationFilePaths()
+        {
+            /// Inputs.
+            var dotnetPackName = Instances.DotnetPackNames.Microsoft_NETCore_App_Ref;
+            var targetFramework = Instances.TargetFrameworkMonikers.NET_6;
+
+
+            /// Run.
+            Instances.TextOutputOperator.In_TextOutputContext_Console(
+                textOutput =>
+                {
+                    var documentationXmlFilePaths = Instances.DotnetPackPathOperator.Get_DocumentationXmlFilePaths(
+                        dotnetPackName,
+                        targetFramework,
+                        textOutput);
+
+                    foreach (var filePath in documentationXmlFilePaths)
+                    {
+                        Console.WriteLine(filePath);
+                    }
+                });
+        }
+
+        public void Get_DotnetPackDirectoryPath()
+        {
+            /// Inputs.
+            var dotnetPackName = Instances.DotnetPackNames.Microsoft_NETCore_App_Ref;
+            var targetFramework = Instances.TargetFrameworkMonikers.NET_6;
+
+
+            /// Run.
+            Instances.TextOutputOperator.In_TextOutputContext_Console(
+                textOutput =>
+                {
+                    var dotnetDirectoryPath = Instances.DotnetPackPathOperator.Get_DotnetPackDirectoryPath(
+                        dotnetPackName,
+                        targetFramework,
+                        textOutput);
+
+                    Console.WriteLine(dotnetDirectoryPath);
+                });
+        }
+
         public async Task Count_InheritDocElements()
         {
 
