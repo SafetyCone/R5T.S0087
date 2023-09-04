@@ -8,8 +8,8 @@ namespace R5T.S0087
     {
         static async Task Main()
         {
-            //Scripts.Instance.Open_DotnetPacksDirectory_InExplorer();
-            await Scripts.Instance.Ingest_DotnetPackMemberDocumentations();
+            Scripts.Instance.Open_DotnetPacksDirectory_InExplorer();
+            //await Scripts.Instance.Ingest_DotnetPackMemberDocumentations();
 
             //Demonstrations.Instance.Get_DocumentationFilePaths();
             //Demonstrations.Instance.Get_DotnetPackDirectoryPath();
