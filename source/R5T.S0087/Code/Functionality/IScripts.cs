@@ -144,13 +144,13 @@ namespace R5T.S0087
                                     })
                                 );
 
-                            Instances.FileOperator.WriteLines_Synchronous(
+                            Instances.FileOperator.Write_Lines_Synchronous(
                                 outputFilePath3,
                                 lines);
                         }
                         else
                         {
-                            Instances.FileOperator.WriteText_Synchronous(
+                            Instances.FileOperator.Write_Lines_Synchronous(
                                 outputFilePath3,
                                 "No duplicates identities.");
                         }
@@ -172,13 +172,13 @@ namespace R5T.S0087
                                 })
                             );
 
-                        Instances.FileOperator.WriteLines_Synchronous(
+                        Instances.FileOperator.Write_Lines_Synchronous(
                             outputFilePath,
                             lines);
                     }
                     else
                     {
-                        Instances.FileOperator.WriteText_Synchronous(
+                        Instances.FileOperator.Write_Text_Synchronous(
                             outputFilePath,
                             "No duplicates identities with different documentation values.");
                     }
@@ -189,7 +189,7 @@ namespace R5T.S0087
                             .OrderAlphabetically()
                             ;
 
-                        Instances.FileOperator.WriteLines_Synchronous(
+                        Instances.FileOperator.Write_Lines_Synchronous(
                             outputFilePath2,
                             lines);
                     }
