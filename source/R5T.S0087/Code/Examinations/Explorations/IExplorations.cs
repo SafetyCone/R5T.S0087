@@ -33,7 +33,7 @@ namespace R5T.S0087
 
             /// Run.
             // Get member documentations for each pack.
-            var memberDocumentationsByPack = new Dictionary<IDotnetPackName, IDictionary<IIdentityName, MemberDocumentation>>();
+            var memberDocumentationsByPack = new Dictionary<IDotnetPackName, IDictionary<IIdentityName, T0212.F000.MemberDocumentation>>();
 
             foreach (var dotnetPackName in dotnetPackNames)
             {
@@ -66,7 +66,7 @@ namespace R5T.S0087
                             .OrderAlphabetically()
                     );
 
-                Instances.FileOperator.WriteAllLines_Synchronous(
+                Instances.FileOperator._Platform.Write_Lines_Synchronous(
                     $@"C:\Temp\{pair.Item1}-{pair.Item2}.txt",
                     lines);
             }

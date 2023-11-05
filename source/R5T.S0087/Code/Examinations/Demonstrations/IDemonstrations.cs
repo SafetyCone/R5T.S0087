@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
+using R5T.L0062.T000;
 using R5T.T0141;
-using R5T.T0162;
-using R5T.T0180.Extensions;
-using R5T.T0212.F000;
-using R5T.T0215;
 
 
 namespace R5T.S0087
@@ -14,6 +12,126 @@ namespace R5T.S0087
     [DemonstrationsMarker]
     public partial interface IDemonstrations : IDemonstrationsMarker
     {
+        public async Task Load_DotnetPackDocumentationFiles()
+        {
+            /// Inputs.
+            var targetFramework = Instances.TargetFrameworkMonikers.NET_6;
+            var outputFilePath = Instances.FilePaths.OutputTextFilePath;
+            var errorsFilePath = Instances.FilePaths.OutputErrorsTextFilePath;
+
+
+            /// Run.
+            var documentationFilePaths = Instances.DotnetPackPathsOperator.Get_DotnetPackDocumentationFilePaths(targetFramework);
+
+            var results = new Dictionary<IIdentityString, MemberDocumentation>();
+            var duplicates = new Dictionary<IIdentityString, List<MemberDocumentation>>();
+
+            var index = 1;
+            var documentationFilePathsCount = documentationFilePaths.Length;
+            foreach (var documentationFilePath in documentationFilePaths)
+            {
+                Console.WriteLine($"Processing documentation file ({index++}/{documentationFilePathsCount})...\n{documentationFilePath}");
+
+                var documentationXmlFileDocumentationTarget = Instances.DocumentationTargetOperator.Get_DocumentationXmlFileTarget(documentationFilePath);
+
+                var rawMemberElements = await Instances.DocumentationFileOperator.Get_MemberElements_Raw(documentationFilePath);
+
+                foreach (var memberElement in rawMemberElements)
+                {
+                    // Reformat the member element.
+                    Instances.MemberElementOperator.RemoveExtraTextLineEndings(memberElement);
+
+                    var memberDocumentation = Instances.MemberDocumentationOperator.Get_MemberDocumentation(
+                        memberElement,
+                        documentationXmlFileDocumentationTarget);
+
+                    var added = results.TryAdd(
+                        memberDocumentation.IdentityString,
+                        memberDocumentation);
+                    if(!added)
+                    {
+                        // If this is the first duplicate, add the initial member documentation.
+                        var isFirstDuplicate = !duplicates.ContainsKey(memberDocumentation.IdentityString);
+                        if(isFirstDuplicate)
+                        {
+                            var initialMemberDocumentation = results[memberDocumentation.IdentityString];
+
+                            Instances.DictionaryOperator.Add_Value(
+                                duplicates,
+                                initialMemberDocumentation.IdentityString,
+                                initialMemberDocumentation);
+                        }
+
+                        // Now add the duplicate member documentation.
+                        Instances.DictionaryOperator.Add_Value(
+                            duplicates,
+                            memberDocumentation.IdentityString,
+                            memberDocumentation);
+                    }
+                }
+            }
+
+            // Describe results and duplicates.
+            var lines = Instances.EnumerableOperator.From($"Dotnet pack ('{targetFramework}') member documentations:\n(count: {results.Count})\n")
+                .Append(results.Values
+                    .Select(Instances.MemberDocumentationOperator.Describe)
+                );
+
+            Instances.FileOperator.Write_Lines_Synchronous(
+                outputFilePath,
+                lines);
+
+            lines = Instances.EnumerableOperator.From($"Duplicate dotnet pack ('{targetFramework}') member documentations:\n(count: {duplicates.Count})\n")
+                .Append(duplicates
+                    .SelectMany(duplicate => Instances.EnumerableOperator.From($"{duplicate.Key}:")
+                        .Append(duplicate.Value
+                            .Select(Instances.MemberDocumentationOperator.Describe)
+                        )
+                        .Append("")
+                    )
+                );
+
+            Instances.FileOperator.Write_Lines_Synchronous(
+                errorsFilePath,
+                lines);
+
+            Instances.NotepadPlusPlusOperator.Open(
+                outputFilePath,
+                errorsFilePath);
+        }
+
+        public void List_DuplicateDotnetPackAssemblyFilePaths()
+        {
+            /// Inputs.
+            var targetFramework = Instances.TargetFrameworkMonikers.NET_6;
+            var outputFilePath = Instances.FilePaths.OutputTextFilePath;
+
+
+            /// Run.
+            var runtimeAssemblyFilePaths = Instances.DotnetPackPathsOperator.Get_DotnetPackAssemblyFilePaths(targetFramework);
+
+            var distinctRuntimeAssemblyFilePaths = Instances.AssemblyFilePathOperator.Get_Distinct_KeepFirst(
+                runtimeAssemblyFilePaths,
+                out var duplicateAssemblyFilePathsByAssemblyFileName);
+
+            var lines = Instances.EnumerableOperator.Empty<string>()
+                .AppendIf(duplicateAssemblyFilePathsByAssemblyFileName.Any(), Instances.EnumerableOperator.From($"Duplicate '{targetFramework}' dotnet pack assembly file paths:")
+                    .Append(duplicateAssemblyFilePathsByAssemblyFileName
+                        .SelectMany(pair => Instances.EnumerableOperator.From($"{pair.Key}:")
+                            .Append(pair.Value
+                                .Select(assemblyFilePath => $"\t{assemblyFilePath}")
+                            )
+                        )
+                    )
+                )
+                .AppendIf(duplicateAssemblyFilePathsByAssemblyFileName.None(), $"<No duplicate '{targetFramework}' dotnet pack assembly file paths.>")
+                ;
+
+            Instances.NotepadPlusPlusOperator.WriteLinesAndOpen(
+                outputFilePath.Value,
+                lines);
+        }
+
         public void Get_DocumentationFilePaths()
         {
             /// Inputs.
@@ -22,7 +140,7 @@ namespace R5T.S0087
 
 
             /// Run.
-            Instances.TextOutputOperator.In_TextOutputContext_Console(
+            Instances.TextOutputOperator._Base.In_TextOutputContext_Console(
                 textOutput =>
                 {
                     var documentationXmlFilePaths = Instances.DotnetPackPathOperator.Get_DocumentationXmlFilePaths(
@@ -45,7 +163,7 @@ namespace R5T.S0087
 
 
             /// Run.
-            Instances.TextOutputOperator.In_TextOutputContext_Console(
+            Instances.TextOutputOperator._Base.In_TextOutputContext_Console(
                 textOutput =>
                 {
                     var dotnetDirectoryPath = Instances.DotnetPackPathOperator.Get_DotnetPackDirectoryPath(
@@ -55,11 +173,6 @@ namespace R5T.S0087
 
                     Console.WriteLine(dotnetDirectoryPath);
                 });
-        }
-
-        public async Task Count_InheritDocElements()
-        {
-
         }
 
         public async Task List_MemberDocumentations()
@@ -75,10 +188,10 @@ namespace R5T.S0087
                 dotnetPackName,
                 targetFramework);
 
-            var lines = Instances.MemberDocumentationOperator.Describe(memberDocumentationsByIdentityName.Values);
+            var lines = Instances.MemberDocumentationOperator_T0212_F000.Describe(memberDocumentationsByIdentityName.Values);
 
             Instances.NotepadPlusPlusOperator.WriteLinesAndOpen(
-                outputFilePath,
+                outputFilePath.Value,
                 lines);
         }
 

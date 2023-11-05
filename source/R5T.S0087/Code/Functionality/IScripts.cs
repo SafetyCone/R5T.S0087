@@ -7,6 +7,8 @@ using R5T.F0000.Extensions;
 using R5T.T0132;
 using R5T.T0162;
 using R5T.T0172;
+using R5T.T0179.Extensions;
+using R5T.T0181;
 using R5T.T0212.F000;
 
 
@@ -15,6 +17,65 @@ namespace R5T.S0087
     [FunctionalityMarker]
     public partial interface IScripts : IFunctionalityMarker
     {
+        /// <summary>
+        /// For a dotnet pack, verify that all XML files in its directory are documentation XML files.
+        /// </summary>
+        public async Task Verify_DotnetPackDirectoryXmlFilesAreDocumentationFiles()
+        {
+            /// Inputs.
+            var dotnetPackNames =
+                // Test only the .Net 6.0 packs.
+                Instances.DotnetPackNameSets.ForNet6;
+            var targetFramework =
+                Instances.TargetFrameworkMonikers.NET_6
+                ;
+            var outputFilePath = Instances.FilePaths.OutputTextFilePath;
+
+
+            /// Run.
+            var allXmlFilePaths = new List<IXmlFilePath>();
+            var xmlFilesThatAreNotDocumentationFiles = new List<IXmlFilePath>();
+
+            foreach (var dotnetPackName in dotnetPackNames)
+            {
+                var dotnetPackDirectoryPath = Instances.DotnetPackPathOperator.Get_DotnetPackDirectoryPath(
+                    dotnetPackName,
+                    targetFramework);
+
+                var xmlFilePaths = Instances.FileSystemOperator.Enumerate_ChildXmlFilePaths(dotnetPackDirectoryPath);
+
+                foreach (var xmlFilePath in xmlFilePaths)
+                {
+                    allXmlFilePaths.Add(xmlFilePath);
+
+                    Console.WriteLine($"Analyzing path...\n\t{xmlFilePath}");
+
+                    var isDocumentationXmlFile = await Instances.DocumentationFileOperator.Is_DocumentationXmlFile(xmlFilePath);
+                    if(!isDocumentationXmlFile)
+                    {
+                        xmlFilesThatAreNotDocumentationFiles.Add(xmlFilePath);
+                    }
+                }
+            }
+
+            var lines = Instances.EnumerableOperator.Empty<string>()
+                .AppendIf(xmlFilesThatAreNotDocumentationFiles.Any(),
+                    xmlFilesThatAreNotDocumentationFiles.Get_Values()
+                )
+                .AppendIf(xmlFilesThatAreNotDocumentationFiles.None(), Instances.EnumerableOperator.From("<In all .NET 6.0 dotnet pack directories, there were no XML files that were not documentation files.>\n")
+                    .Append($"Analyzed paths (count: {allXmlFilePaths.Count}):")
+                    .Append(allXmlFilePaths
+                        .Get_Values()
+                        .OrderAlphabetically()
+                        .Select(x => $"\t{x}")
+                    )
+                );
+
+            Instances.NotepadPlusPlusOperator.WriteLinesAndOpen(
+                outputFilePath.Value,
+                lines);
+        }
+
         /// <summary>
         /// For a dotnet pack, get all member elements by identity name.
         /// (Note: there might be multiple member elements for a single identity name, i.e. duplicate member identity names.)
@@ -42,10 +103,10 @@ namespace R5T.S0087
 
 
             /// Run.
-            var result = new Dictionary<IIdentityName, List<MemberDocumentation>>();
+            var result = new Dictionary<IIdentityName, List<T0212.F000.MemberDocumentation>>();
             var identitiesAndDocumentationXmlFilePaths = new Dictionary<IIdentityName, List<IDocumentationXmlFilePath>>();
 
-            await Instances.TextOutputOperator.InTextOutputContext(
+            await Instances.TextOutputOperator.In_TextOutputContext(
                 humanOutputFilePath,
                 nameof(Ingest_DotnetPackMemberDocumentations),
                 logFilePath,
@@ -60,19 +121,16 @@ namespace R5T.S0087
                     {
                         textOutput.WriteInformation("Processing documentation XML file...\n\t{0}", documentationXmlFilePath);
 
-                        var documentationXmlFileTarget = new DocumentationXmlFileTarget
-                        {
-                            DocumentationXmlFilePath = documentationXmlFilePath,
-                        };
+                        var documentationXmlFileTarget = Instances.DocumentationTargetOperator.Get_DocumentationXmlFileTarget(documentationXmlFilePath);
 
-                        var memberElements = await Instances.DocumentationFileOperator.Get_MemberElements(
+                        var memberElements = await Instances.DocumentationFileOperator.Get_MemberElements_Raw(
                             documentationXmlFilePath);
 
                         foreach (var memberElement in memberElements)
                         {
                             var identityName = Instances.MemberElementOperator.Get_IdentityName(memberElement);
 
-                            var memberDocumentation = new MemberDocumentation
+                            var memberDocumentation = new T0212.F000.MemberDocumentation
                             {
                                 DocumentationTarget = documentationXmlFileTarget,
                                 IdentityName = identityName,
@@ -107,7 +165,7 @@ namespace R5T.S0087
                             }
                             else
                             {
-                                var list = new List<MemberDocumentation>
+                                var list = new List<T0212.F000.MemberDocumentation>
                                 {
                                     memberDocumentation
                                 };
@@ -167,7 +225,7 @@ namespace R5T.S0087
                                 .OrderAlphabetically(x => x.Key.Value)
                                 .SelectMany(x =>
                                 {
-                                    var lines = Instances.MemberDocumentationOperator.Describe(x.Value);
+                                    var lines = Instances.MemberDocumentationOperator_T0212_F000.Describe(x.Value);
                                     return lines;
                                 })
                             );
@@ -203,18 +261,13 @@ namespace R5T.S0087
                 outputFilePath3);
         }
 
-        //public void Get_DotnetPackIdentityStrings()
-        //{
-
-        //}
-
         /// <summary>
         /// Opens the dotnet packs directory in an Explorer window.
         /// </summary>
         public void Open_DotnetPacksDirectory_InExplorer()
         {
-            Instances.WindowsExplorerOperator.OpenDirectoryInExplorer(
-                Instances.DotnetPacksDirectoryPaths.Windows.Value);
+            Instances.WindowsExplorerOperator.Open(
+                Instances.DotnetPacksDirectoryPaths.Windows);
         }
     }
 }
